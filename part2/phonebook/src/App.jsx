@@ -44,12 +44,44 @@ const Person = ({ person, deletePerson }) => {
   )
 }
 
+const Notification = ({ message, type }) => {
+  let messageStyle = {}
+  if (type === 'error') {
+    messageStyle = {
+      text: 'red',
+      padding: '10px',
+      borderWidth: '4px',
+      borderStyle: 'solid',
+      borderRadius: '5px',
+      borderColor: 'red'
+    }
+  } else {
+    messageStyle = {
+      text: 'green',
+      padding: '10px',
+      borderWidth: '4px',
+      borderStyle: 'solid',
+      borderRadius: '5px',
+      borderColor: 'green'
+    }
+  }
+  if (!message) {
+    return null
+  }
+  return (
+    <div style={messageStyle}>
+      {message}
+    </div>
+  )
+}
+
 const App = () => {
   const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [search, setSearch] = useState('')
-
+  const [message, setMessage] = useState('')
+  const [type, setType] = useState('')
   const enterName = (event) => {
     setNewName(event.target.value)
   }
@@ -65,8 +97,17 @@ const App = () => {
   const submitName = (event) => {
     if (persons.some(person => person.name === newName)) {
       // alert(`${newName} is already in the phonebook!`)
-      let person = persons.find(p => p.name === newName)
-      updatePerson(person)
+      const person = persons.find(p => p.name === newName)
+      if (window.confirm(`${person.name} is already in the phonebook, would you like to update their number?`)) {
+        peopleService.updatePerson(person, newNumber)
+          .then(newPerson => {
+            setPersons(persons.map(p => p.id !== person.id ? p : newPerson))
+            setMessage(`Updated ${person.name}'s number.`)
+            setTimeout(() => {
+              setMessage(null)
+            }, 3000);
+          })
+      }
     } else {
       peopleService
         .addPerson({ name: newName, number: newNumber })
@@ -76,6 +117,10 @@ const App = () => {
         .catch(error => {
           console.log('Failed to save new user to phonebook')
         })
+      setMessage(`Added ${newName} to the phonebook.`)
+      setTimeout(() => {
+        setMessage(null)
+      }, 3000);
     }
     event.preventDefault()
     setNewName('')
@@ -88,17 +133,17 @@ const App = () => {
         .then(() => {
           setPersons(persons.filter(p => p.id !== person.id))
         })
-    }
-  }
-
-  const updatePerson = (person) => {
-    if (window.confirm(`${person.name} is already in the phonebook, would you like to update their number?`)) {
-      peopleService.updatePerson(person, newNumber)
-        .then(newPerson => {
-          setPersons(persons.map(p => p.id !== person.id ? p : newPerson))
+        .catch(() => {
+          setMessage(`${person.name} has already been removed from the phonebook.`)
+          setType('error')
+          setTimeout(() => {
+            setMessage(null)
+            setType(null)
+          }, 3000);
         })
     }
   }
+
 
   const peopleToShow = persons.filter(person => person.name.toLowerCase().includes(search.toLowerCase()))
 
@@ -119,6 +164,7 @@ const App = () => {
       <h2>Phonebook</h2>
       <Filter searchValue={search} onChange={updateSearch} />
       <h2>Add a new person</h2>
+      <Notification message={message} type={type} />
       <AddPerson nameValue={newName} onNameChange={enterName} numberValue={newNumber} onNumberChange={enterNumber} onSubmit={submitName} />
       <h2>Numbers</h2>
       <People peopleToShow={peopleToShow} deletePerson={deletePerson} />
