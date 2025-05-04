@@ -135,6 +135,7 @@ const App = () => {
         })
         .catch(() => {
           setMessage(`${person.name} has already been removed from the phonebook.`)
+          setPersons(persons.filter(p => p.id !== person.id))
           setType('error')
           setTimeout(() => {
             setMessage(null)
