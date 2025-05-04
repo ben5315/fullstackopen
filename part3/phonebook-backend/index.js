@@ -30,10 +30,6 @@ let people = [
     }
 ]
 
-app.get('/', (req, res) => {
-    res.status(200).end()
-})
-
 app.get('/api/persons', (req, res) => {
     res.json(people)
 })
